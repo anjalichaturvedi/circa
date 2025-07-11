@@ -12,7 +12,7 @@ struct CircaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        Settings { EmptyView() } // No settings window needed
+        Settings { EmptyView() }
     }
 }
 
@@ -29,15 +29,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            button.image = nil
-            button.title = "✨ \(calculateStreakCount())"
+            button.title = "✨ \(calculateGeneralStreak())"
             button.action = #selector(togglePopover(_:))
             button.target = self
         }
 
         popover = NSPopover()
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: CalendarView())
+        popover.contentViewController = NSHostingController(rootView: UnifiedView())
 
         NotificationCenter.default.addObserver(
             self,
@@ -63,16 +62,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func calculateStreakCount() -> Int {
-        let streakDates = UserDefaults.standard.stringArray(forKey: "streakDates") ?? []
+    func calculateGeneralStreak() -> Int {
+        let taskCompletions = UserDefaults.standard.dictionary(forKey: "taskCompletions") as? [String: [String]] ?? [:]
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         var count = 0
         var date = today
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-
-        while streakDates.contains(formatter.string(from: date)) {
+        while let completions = taskCompletions[formatter.string(from: date)], !completions.isEmpty {
             count += 1
             date = calendar.date(byAdding: .day, value: -1, to: date)!
         }

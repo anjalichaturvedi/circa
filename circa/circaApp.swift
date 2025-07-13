@@ -57,10 +57,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func updateStreakCount(_ notification: Notification) {
-        if let streakCount = notification.userInfo?["streakCount"] as? Int {
-            statusItem.button?.title = "✨ \(streakCount)"
+        if let streaks = notification.userInfo?["taskStreaks"] as? [String: Int] {
+            let activeStreaks = streaks.values.filter { $0 > 0 }.count
+            statusItem.button?.title = "🔥 \(activeStreaks) \(activeStreaks == 1 ? "" : "")"
         }
     }
+
+
 
     func calculateGeneralStreak() -> Int {
         let taskCompletions = UserDefaults.standard.dictionary(forKey: "taskCompletions") as? [String: [String]] ?? [:]

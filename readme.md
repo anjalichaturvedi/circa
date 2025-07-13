@@ -40,5 +40,8 @@ open circa.xcodeproj
 
 run the app ```cmd + R```
 
-##
-demo
+## demo
+
+
+https://github.com/user-attachments/assets/e5f0c6a7-9ba3-4fee-909a-6bf0147019c4
+

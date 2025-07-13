@@ -1,11 +1,8 @@
 import SwiftUI
 
-// MARK: - Task Model
-
 struct TaskItem: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
-    var color: String
     var priority: String
 }
 
@@ -14,7 +11,6 @@ struct UnifiedView: View {
     @State private var tasks: [TaskItem] = []
 
     @State private var newTaskName = ""
-    @State private var selectedColor = "Blue"
     @State private var selectedPriority = "Medium"
 
     @State private var displayedMonth: Date = Calendar.current.startOfDay(for: Date())
@@ -28,9 +24,9 @@ struct UnifiedView: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
 
-            Text("Calendar")
+            Text("calendar")
                 .font(.title3)
                 .bold()
                 .padding(.bottom, 2)
@@ -49,7 +45,6 @@ struct UnifiedView: View {
             }
             .padding(.horizontal)
 
-            // Calendar Grid
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 6) {
                 ForEach(1...daysInMonth(for: displayedMonth), id: \.self) { day in
                     let date = dateFor(day: day, in: displayedMonth)
@@ -99,18 +94,18 @@ struct UnifiedView: View {
 
             Divider()
 
-            Text("Your Tasks")
+            Text("your tasks")
                 .font(.headline)
                 .padding(.top, 8)
 
-            // Task input section
+            // task input
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    TextField("New task", text: $newTaskName)
+                    TextField("new task", text: $newTaskName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
 
                     Button(action: addTask) {
-                        Label("Add", systemImage: "plus.circle.fill")
+                        Label("add", systemImage: "plus.circle.fill")
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(Color.accentColor.opacity(0.2))
@@ -120,51 +115,32 @@ struct UnifiedView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
 
-                HStack(spacing: 10) {
-                    Menu {
-                        ForEach(["Blue", "Green", "Red", "Orange", "Purple"], id: \.self) { color in
-                            Button(action: { selectedColor = color }) {
-                                Text(color)
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            Text("Color: \(selectedColor)")
-                            Image(systemName: "chevron.down")
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
-                    }
+                Text("priority")
+                    .font(.caption)
 
-                    Menu {
-                        ForEach(["High", "Medium", "Low"], id: \.self) { level in
-                            Button(action: { selectedPriority = level }) {
-                                Text(level)
-                            }
+                HStack {
+                    ForEach(["High", "Medium", "Low"], id: \.self) { level in
+                        Button(action: { selectedPriority = level }) {
+                            Text(level)
+                                .font(.caption)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    selectedPriority == level
+                                        ? priorityColor(level).opacity(0.3)
+                                        : Color.gray.opacity(0.1)
+                                )
+                                .foregroundColor(.primary)
+                                .cornerRadius(8)
                         }
-                    } label: {
-                        HStack {
-                            Text("Priority: \(selectedPriority)")
-                            Image(systemName: "chevron.down")
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .font(.caption)
 
                 ScrollView {
                     ForEach(tasks) { task in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Circle()
-                                    .fill(Color(task.color.lowercased()))
-                                    .frame(width: 8, height: 8)
-
                                 Text(task.name)
                                     .fontWeight(.medium)
 
@@ -187,15 +163,11 @@ struct UnifiedView: View {
                             }
 
                             HStack(spacing: 10) {
-                                styledButton("Done Today", systemIcon: "checkmark") {
+                                styledButton("done today", systemIcon: "checkmark") {
                                     markTaskDoneToday(task.id)
                                 }
 
-                                styledButton("Edit", systemIcon: "pencil") {
-                                    // Handle editing
-                                }
-
-                                styledButton("Delete", systemIcon: "trash", color: .red) {
+                                styledButton("delete", systemIcon: "trash", color: .red) {
                                     deleteTask(task)
                                 }
                             }
@@ -213,13 +185,11 @@ struct UnifiedView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding()
-        .frame(width: 320, height: 530)
+        .frame(width: 320, height: 540)
         .onAppear { loadTasks() }
         .onChange(of: taskCompletions) { _ in saveAndNotify() }
         .onChange(of: tasks) { _ in saveAndNotify() }
     }
-
-    // MARK: - Shared Helpers
 
     func styledButton(_ title: String, systemIcon: String, color: Color = .accentColor, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -278,19 +248,10 @@ struct UnifiedView: View {
         return count
     }
 
-    func markTaskDoneToday(_ id: UUID) {
-        let today = formatter.string(from: Date())
-        var completions = taskCompletions[today] ?? []
-        if !completions.contains(id) {
-            completions.append(id)
-        }
-        taskCompletions[today] = completions
-    }
-
     func addTask() {
         let trimmed = newTaskName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        let new = TaskItem(id: UUID(), name: trimmed, color: selectedColor, priority: selectedPriority)
+        let new = TaskItem(id: UUID(), name: trimmed, priority: selectedPriority)
         tasks.append(new)
         newTaskName = ""
     }
@@ -300,6 +261,15 @@ struct UnifiedView: View {
         for key in taskCompletions.keys {
             taskCompletions[key]?.removeAll { $0 == task.id }
         }
+    }
+
+    func markTaskDoneToday(_ id: UUID) {
+        let today = formatter.string(from: Date())
+        var completions = taskCompletions[today] ?? []
+        if !completions.contains(id) {
+            completions.append(id)
+        }
+        taskCompletions[today] = completions
     }
 
     func saveAndNotify() {
@@ -329,8 +299,6 @@ struct UnifiedView: View {
     }
 }
 
-// MARK: - FloatingTaskPanel stays unchanged
-
 struct FloatingTaskPanel: View {
     let date: Date
     @Binding var taskCompletions: [String: [UUID]]
@@ -344,9 +312,9 @@ struct FloatingTaskPanel: View {
     }()
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Tasks on \(formatter.string(from: date))")
+                Text("tasks on \(formatter.string(from: date))")
                     .font(.subheadline)
                     .bold()
                 Spacer()
@@ -357,7 +325,7 @@ struct FloatingTaskPanel: View {
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(tasks) { task in
                         Toggle(isOn: Binding(
                             get: {
@@ -368,9 +336,7 @@ struct FloatingTaskPanel: View {
                                 let dateStr = formatter.string(from: date)
                                 var completions = taskCompletions[dateStr] ?? []
                                 if newValue {
-                                    if !completions.contains(task.id) {
-                                        completions.append(task.id)
-                                    }
+                                    completions.append(task.id)
                                 } else {
                                     completions.removeAll { $0 == task.id }
                                 }
@@ -378,9 +344,6 @@ struct FloatingTaskPanel: View {
                             }
                         )) {
                             HStack {
-                                Circle()
-                                    .fill(Color(task.color.lowercased()))
-                                    .frame(width: 6, height: 6)
                                 Text(task.name)
                                 Spacer()
                                 Text(task.priority)
@@ -392,7 +355,9 @@ struct FloatingTaskPanel: View {
                         }
                     }
                 }
+                .padding(.top, 4)
             }
+            .frame(maxHeight: 150)
         }
         .padding()
         .background(.thinMaterial)
